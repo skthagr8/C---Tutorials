@@ -1,23 +1,22 @@
 #include <iostream>
-#include <string>
 
-class MyClass {
-public:
-    // Explicit constructor
-    explicit MyClass(int x) : value(x) {}
+class numbers {
+    private :
+     const int constant = 10;
+    public :
+      int num;
 
-    void print() {
-        std::cout << "Value: " << value << std::endl;
+    explicit numbers(int num) : num(num) {}
+    numbers() : num(0) {}
+
+    int getNumber() {
+        return num;
     }
-
-private:
-    int value;
 };
 
-int main() {
-   //  MyClass obj = 42; // Error: No implicit conversion allowed
-   MyClass obj(42);    // Allowed: Explicit construction
-    obj.print();        // Output: Value: 42
 
+int main(){
+    numbers n1;
+    std::cout <<"The retrieve number is "<< n1.getNumber()<< std::endl;
     return 0;
 }
