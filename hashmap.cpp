@@ -10,157 +10,8 @@
 #include <iomanip>
 #include <list>
 #include <array>
+#include <unordered_map>
 
-struct HashingFunction{
-    public:
-    int jenkinsHash(int key, int mapSize) {
-        key += (key << 10);
-        key ^= (key >> 6);
-        key += (key << 3);
-        key ^= (key >> 11);
-        key += (key << 15);
-        return key % mapSize;  // Ensure index is within valid range
-    }
-
-    int jenkinsHash(const std::string& key, int mapSize) {
-       unsigned int hash = 0;
-       for (char c : key) {
-          hash += c;
-          hash += (hash << 10);
-          hash ^= (hash >> 6);
-        }
-       hash += (hash << 3);
-       hash ^= (hash >> 11);
-       hash += (hash << 15);
-       return hash % mapSize;  // Ensure index is within valid range
-    }
-
-    int key;
-    explicit HashingFunction(int key) : key(key) {}
-    HashingFunction() : key(0) {}
-};
-
-template <typename T1, typename T2>
-class Data {
-    public:
-        T1 key; // T1 is an integer or string
-        T2 value; // T2 is a int or string
-        
-        Data() : key(""), value(0) {}
-        explicit Data(T1 key, T2 value) : key(key), value(value) {}
-
-    std::tuple<T1, T2> data;
-   
-    std::tuple <T1, T2> getData() {
-        std::tuple<T1, T2> data = std::make_tuple(key, value);
-        return data;
-    }
-    T1 getKey() const {
-        return key;
-    }
-    T2 getValue() const {
-        return value;
-    }
-};
-
-class HashMap{
-    private:
-        typedef std::vector<Data<std::string,int>> Map;
-        typedef Data<std::string,int> Data;
-        HashingFunction hash; 
-        Data data;
-        Map map;
-    public:
-        int size;
-        int maxSize = 16;
-    
-    // Explicit constructor to initialize the size and max size of the map
-    explicit HashMap(int maxSize) : size(0), maxSize(maxSize) {}
-
-       // Function to resize the map
-    void resizeMap() {
-        maxSize *= 2; // Double the size
-        Map newMap(maxSize); // Create a new vector with the updated size
-
-        // Rehash and insert existing elements into the new map
-        for (const auto& entry : map) {
-            int index = hash.jenkinsHash(entry.getKey(), maxSize);
-            while (newMap[index].getKey() != "") {  // Linear probing to find the empty spot
-                index = (index + 1) % maxSize;
-            }
-            newMap[index] = entry;
-        }
-
-        map = std::move(newMap);  // Replace old map with the resized one
-    }
-   
-  // Bulk insert function to handle multiple Data elements
-    void insert(const std::vector<Data>& dataItems) {
-        // Check if resizing is necessary
-        if (size + dataItems.size() > maxSize) {
-            std::cout << "Resizing the map...\n";
-            resizeMap();  // Resize if necessary
-        }
-
-        // Process each data element in the bulk insertion
-        for (const auto& data : dataItems) {
-            std::string key = data.getKey();
-            int index = hash.jenkinsHash(key, maxSize);
-
-            // Linear probing to find an available index
-       //     while (map[index].getKey() != "" && map[index].getKey() != key) {  // If spot is occupied or same key found
-       //         index = (index + 1) % maxSize;
-       //     }
-         
-
-            // Insert the data if not already present
-            if (map[index].getKey() == key) {
-                std::cout << "Error: Key '" << key << "' already exists. Cannot insert duplicate key.\n";
-            } else {
-                map[index] = data;  // Insert at the hashed index
-                size++;
-                std::cout << "Inserted: " << key << " -> " << data.getValue() << " at index " << index << "\n";
-            }
-        }
-    }
-
-    int retrieveIndex (std::string key) {
-        int index = hash.jenkinsHash(key, maxSize);
-        return index;
-    }
-    
-     // Function to display the map
-    void display() {
-        for (int i = 0; i < maxSize; i++) {
-            if (map[i].getKey() != "") {
-                std::cout << "[" << i << "] " << map[i].getKey() << ": " << map[i].getValue() << std::endl;
-            }
-        }
-    }
-
-    // Function to return the map which a list of data tuples
-    Map getMap() {
-        return map;
-    }
-    // Function to return the first tuple in the map
-    Data returnFirstIndex() const {
-        if (!map.empty()) {
-            return map[0];
-        }
-        throw std::out_of_range("Map is empty");
-    }
-
-    // Function to return the last tuple in the map
-    Data returnLastIndex(Map& map) {
-        return map[map.size() - 1];
-    }
-
-    // Function to return the size of the map
-    int getSize() {
-        return size;
-    }
- 
-};
 
 struct Node {
     int data;
@@ -273,7 +124,7 @@ class AVLTrees {
             root = insert(root, value);
         }
 
-        Node* getRoot() {
+        Node* getRoot() const {
             return root;
         }
 
@@ -357,52 +208,197 @@ class Traversals {
         }
 };
 
-int main(){
-    AVLTrees tree;
-    tree.insert(8);
-    tree.insert(3);
-    tree.insert(10);
-    tree.insert(1);
-    tree.insert(6);
-    tree.insert(14);
-    tree.insert(4);
-
-    std::cout << "The height of this tree is: " << AVLTrees::getHeight(tree.getRoot()) << std::endl;
-    
-    std::cout << std::endl;
-    std::cout << "In Order Traversal: ";
-    Traversals(tree.getRoot(), Traversals::INORDER);
-
-    std::cout << "Pre Order Traversal: ";
-    Traversals(tree.getRoot(), Traversals::PREORDER);
-
-    std::cout << "Post Order Traversal: ";
-    Traversals(tree.getRoot(), Traversals::POSTORDER);
-
-    std::cout << std::endl;
-
-    int key = 10;
-    Node* result = tree.search(key);
-
-    if (result != nullptr) {
-        std::cout << "Found: " << result->data << std::endl;
-    } else {
-        std::cout << "Not Found" << std::endl;
+struct HashingFunction{
+    public:
+    int jenkinsHash(int key, int mapSize) {
+        key += (key << 10);
+        key ^= (key >> 6);
+        key += (key << 3);
+        key ^= (key >> 11);
+        key += (key << 15);
+        return key % mapSize;  // Ensure index is within valid range
     }
 
-    // Create a HashMap object with a maximum size of 3
-    HashMap hashmap(3);
-    std::vector<Data<std::string, int>> dataItems = {
-        Data<std::string, int>("key1", 100),
-        Data<std::string, int>("key2", 200),
-        Data<std::string, int>("key3", 300),
-        Data<std::string, int>("key4", 400),
-        Data<std::string, int>("key5", 500)
+    int jenkinsHash(const std::string& key, int mapSize) {
+       unsigned int hash = 0;
+       for (char c : key) {
+          hash += c;
+          hash += (hash << 10);
+          hash ^= (hash >> 6);
+        }
+       hash += (hash << 3);
+       hash ^= (hash >> 11);
+       hash += (hash << 15);
+       return hash % mapSize;  // Ensure index is within valid range
+    }
+
+    int key;
+    explicit HashingFunction(int key) : key(key) {}
+    HashingFunction() : key(0) {}
+};
+
+template <typename T1, typename T2>
+class Data {
+    public:
+        T1 key; // T1 is an integer or string
+        T2 value; // T2 is a int or string
+        
+        Data() : key(""), value(0) {}
+        explicit Data(T1 key, T2 value) : key(key), value(value) {}
+
+    std::tuple<T1, T2> data;
+   
+    std::tuple <T1, T2> getData() {
+        std::tuple<T1, T2> data = std::make_tuple(key, value);
+        return data;
+    }
+    T1 getKey() const {
+        return key;
+    }
+    T2 getValue() const {
+        return value;
+    }
+};
+
+class HashMap{
+    private:
+        typedef std::vector<Data<std::string,int>> Map;
+        typedef Data<std::string,int> Data;
+        HashingFunction hash; 
+        Data data;
+        Map map;
+        AVLTrees trees;
+        std::unordered_map<int, AVLTrees> collisionTrees;
+    public:
+        int size;
+        int maxSize = 16;
+    
+    // Explicit constructor to initialize the size and max size of the map
+    explicit HashMap(int maxSize) : size(0), maxSize(maxSize) {map.resize(maxSize);}
+
+       // Function to resize the map
+    void resizeMap() {
+        maxSize *= 2; // Double the size
+        Map newMap(maxSize); // Create a new vector with the updated size
+
+        // Rehash and insert existing elements into the new map
+        for (const auto& entry : map) {
+            int index = hash.jenkinsHash(entry.getKey(), maxSize);
+            while (newMap[index].getKey() != "") {  // Linear probing to find the empty spot
+                index = (index + 1) % maxSize;
+            }
+            newMap[index] = entry;
+        }
+
+        map = std::move(newMap);  // Replace old map with the resized one
+    }
+   
+  // Bulk insert function to handle multiple Data elements
+    void insert(const std::vector<Data>& dataItems) {
+        std::cout << "Attempting to insert " << dataItems.size() << " items..."<< std::endl;
+        // Check if resizing is necessary
+        if (size + dataItems.size() > maxSize) {
+            std::cout << "Resizing the map...\n";
+            resizeMap();  // Resize if necessary
+        }
+        for (const auto& data : dataItems) {
+            std::string key = data.getKey();
+            int index = hash.jenkinsHash(key, maxSize);
+            int value = data.getValue();
+
+            if (map[index].getKey() != "") {  // Collision detected
+                if (collisionTrees.find(index) == collisionTrees.end()) {
+                    collisionTrees[index] = AVLTrees();
+                }
+                collisionTrees[index].insert(value);
+                std::cout << "Collision at index " << index << ": Value " << value << " stored in AVL tree.\n";
+            } else {
+                map[index] = data;
+                size++;
+                std::cout << "Inserted: " << key << " -> " << value << " at index " << index << "\n";
+            }
+        }
+    }
+
+    int retrieveIndex (std::string key) {
+        int index = hash.jenkinsHash(key, maxSize);
+        return index;
+    }
+    void displayCollisions() {
+        for (const auto& [index, tree] : collisionTrees) {
+            std::cout << "Collisions at index " << index << " (AVL Tree): ";
+            Traversals(tree.getRoot(), Traversals::INORDER);
+        }
+    }
+    
+     // Function to display the map
+    void display() {
+        for (int i = 0; i < maxSize; i++) {
+            if (map[i].getKey() != "") {
+                std::cout << "[" << i << "] " << map[i].getKey() << ": " << map[i].getValue() << std::endl;
+            }
+        }
+    }
+
+    // Function to return the map which a list of data tuples
+    Map getMap() {
+        return map;
+    }
+    // Function to return the first tuple in the map
+    Data returnFirstIndex() const {
+        if (!map.empty()) {
+            return map[0];
+        }
+        throw std::out_of_range("Map is empty");
+    }
+
+    // Function to return the last tuple in the map
+    Data returnLastIndex(Map& map) {
+        return map[map.size() - 1];
+    }
+
+    // Function to return the size of the map
+    int getSize() {
+        return size;
+    }
+ 
+};
+
+
+int main(){
+    std::cout << "Program started!" << std::endl;
+    std::cout << std::endl;
+    HashMap hashmap(8); // Start with a small size to force collisions
+
+    // Insert values with minimal collisions
+    std::vector<Data<std::string, int>> dataNoCollisions = {
+        Data<std::string, int>("apple", 100),
+        Data<std::string, int>("banana", 200),
+        Data<std::string, int>("cherry", 300),
+        Data<std::string, int>("date", 400)
     };
 
-    hashmap.insert(dataItems);
-    std::cout << "HashMap contents after bulk insertions:\n";
+    std::cout << "Inserting values with no collisions:\n";
+    hashmap.insert(dataNoCollisions);
     hashmap.display();
+    
+    std::cout << std::endl;
+
+    // Insert values that will cause collisions
+    std::vector<Data<std::string, int>> dataWithCollisions = {
+        Data<std::string, int>("apple", 500),  // Same key (collision in hashmap)
+        Data<std::string, int>("banana", 600), // Same key (collision in hashmap)
+        Data<std::string, int>("grape", 700),  // May collide with another index
+        Data<std::string, int>("kiwi", 800)    // May collide with another index
+    };
+
+    std::cout << "Inserting values with collisions:\n";
+    hashmap.insert(dataWithCollisions);
+    hashmap.display();
+
+    std::cout << "\nDisplaying AVL Trees for Collisions:\n";
+    hashmap.displayCollisions(); // Show AVL trees storing colliding values
+
 
     std::cout << std::endl;
     return 0;
